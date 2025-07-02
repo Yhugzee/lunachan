@@ -1,6 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
+
+const dataPath = path.join(process.cwd(), "data", "threads.json");
 
 function generateChanId(): string {
   const timestamp = Date.now().toString();
@@ -10,7 +13,16 @@ function generateChanId(): string {
   return timestamp.slice(-7) + random;
 }
 
-const dataPath = path.join(process.cwd(), "data", "threads.json");
+// Fonction de tripcode façon imageboard
+function getTripcode(secret?: string): string {
+  if (!secret || !secret.startsWith("#")) return "Anonymous";
+  const hash = crypto
+    .createHash("sha1")
+    .update(secret)
+    .digest("hex")
+    .slice(0, 8);
+  return `Anonymous !${hash}`;
+}
 
 type Message = {
   id: string;
@@ -33,7 +45,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(400).json({ message: "ID invalide" });
   }
 
-  // 🟢 GET - Récupérer un thread par son ID
+  // 🟢 GET - Récupérer un thread
   if (req.method === "GET") {
     try {
       const fileData = fs.readFileSync(dataPath, "utf8");
@@ -42,6 +54,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
       if (!thread)
         return res.status(404).json({ message: "Thread introuvable" });
+
       res.status(200).json(thread);
     } catch (error) {
       console.error(error);
@@ -49,9 +62,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
-  // 🟣 POST - Ajouter un message au thread
+  // 🟣 POST - Ajouter un message
   else if (req.method === "POST") {
-    const { content } = req.body;
+    const { content, trip } = req.body;
 
     if (!content || typeof content !== "string") {
       return res.status(400).json({ message: "Contenu invalide" });
@@ -69,7 +82,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         id: generateChanId(),
         content,
         createdAt: new Date().toISOString(),
-        authorId: "anon-" + Math.floor(Math.random() * 9999),
+        authorId: getTripcode(trip),
       };
 
       threads[threadIndex].messages.push(newMessage);
@@ -82,7 +95,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
-  // 🛑 Méthode non autorisée
+  // ❌ Méthode non autorisée
   else {
     res.setHeader("Allow", ["GET", "POST"]);
     res.status(405).end(`Méthode ${req.method} non autorisée`);

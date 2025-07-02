@@ -1,4 +1,5 @@
 @use '../utils/variables';
+@use "sass:color";
 
 ul {
   list-style: none;
@@ -12,7 +13,7 @@ ul {
     transition: background 0.2s ease;
 
     &:hover {
-      background-color: lighten(variables.$input-bg, 5%);
+      background-color: color.adjust(variables.$input-bg, $lightness: 5%);
     }
 
     strong {
