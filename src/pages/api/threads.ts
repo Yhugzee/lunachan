@@ -1,7 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
-import { v4 as uuidv4 } from "uuid";
+
+function generateChanId(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, "0");
+  return timestamp.slice(-7) + random;
+}
 
 // Définir le chemin du fichier JSON (racine du projet)
 const dataPath = path.join(process.cwd(), "data", "threads.json");
@@ -46,7 +53,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
     // Création d’un nouveau thread
     const newThread: Thread = {
-      id: uuidv4(),
+      id: generateChanId(),
       title,
       createdAt: new Date().toISOString(),
       messages: [],
