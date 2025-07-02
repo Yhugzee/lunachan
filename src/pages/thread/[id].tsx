@@ -15,14 +15,25 @@ type Thread = {
   messages: Message[];
 };
 
+function getTripColor(trip: string): string {
+  if (trip === "Anonymous") return "#888"; // Couleur neutre par défaut
+
+  const hash = Array.from(trip).reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0,
+  );
+  const hue = hash % 360;
+  return `hsl(${hue}, 60%, 55%)`; // Couleur unique générée
+}
+
 export default function ThreadPage() {
   const router = useRouter();
   const { id } = router.query;
 
   const [thread, setThread] = useState<Thread | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [tripcodeInput, setTripcodeInput] = useState("");
 
-  // Charger le thread spécifique
   useEffect(() => {
     if (!id) return;
     fetch(`/api/thread/${id}`)
@@ -37,12 +48,16 @@ export default function ThreadPage() {
     const res = await fetch(`/api/thread/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: newMessage }),
+      body: JSON.stringify({
+        content: newMessage,
+        trip: tripcodeInput,
+      }),
     });
 
     const updatedThread = await res.json();
     setThread(updatedThread);
     setNewMessage("");
+    setTripcodeInput(""); // reset si tu veux
   };
 
   if (!thread) return <p>Chargement...</p>;
@@ -56,17 +71,29 @@ export default function ThreadPage() {
 
       <ul>
         {thread.messages.map((msg) => (
-          <li key={msg.id} style={{ marginBottom: "1rem" }}>
+          <li key={msg.id} style={{ marginBottom: "1.5rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <small>ID: {msg.id}</small>
+              <strong style={{ color: getTripColor(msg.authorId) }}>
+                {msg.authorId}
+              </strong>
               <small>{new Date(msg.createdAt).toLocaleString()}</small>
             </div>
-            <p style={{ marginTop: "0.4rem" }}>{msg.content}</p>
+            <div style={{ marginTop: "0.4rem" }}>
+              <p>{msg.content}</p>
+              <small style={{ color: "#888" }}>ID: {msg.id}</small>
+            </div>
           </li>
         ))}
       </ul>
 
       <form onSubmit={handlePostMessage} style={{ marginTop: "2rem" }}>
+        <input
+          type="text"
+          value={tripcodeInput}
+          onChange={(e) => setTripcodeInput(e.target.value)}
+          placeholder="Tripcode (facultatif, ex: #banane42)"
+          style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
+        />
         <textarea
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
