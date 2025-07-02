@@ -1,0 +1,24 @@
+@use '../utils/variables';
+
+ul {
+  list-style: none;
+  padding: 0;
+
+  li {
+    background-color: variables.$input-bg;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background-color: lighten(variables.$input-bg, 5%);
+    }
+
+    strong {
+      font-size: 1.1rem;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+  }
+}

@@ -1,0 +1,17 @@
+@use '../utils/variables';
+
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: variables.$bg;
+  color: variables.$text;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+}
+
+small {
+  color: variables.$text-muted;
+}

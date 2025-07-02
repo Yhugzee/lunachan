@@ -1,0 +1,11 @@
+@use 'utils/variables';
+@use 'base/reset';
+@use 'base/typography';
+@use 'components/form';
+@use 'components/thread';
+
+main {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
