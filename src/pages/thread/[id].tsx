@@ -74,7 +74,7 @@ export default function ThreadPage() {
           {thread.messages.map((msg) => (
             <li key={msg.id} style={{ marginBottom: "1.5rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <strong style={{ color: getTripColor(msg.tripcode) }}>
+                <strong style={{ color: getTripColor(msg.tripcode ?? "") }}>
                   Anonymous{msg.tripcode && ` ${msg.tripcode}`}
                 </strong>
                 <small>{new Date(msg.createdAt).toLocaleString()}</small>
