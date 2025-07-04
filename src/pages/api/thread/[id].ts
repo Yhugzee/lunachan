@@ -1,13 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import fs from "fs";
-import path from "path";
-import crypto from "crypto";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Thread } from "@/models/Thread";
+import { getTripcode } from "@/lib/tripcode";
 
-const serverSalt = process.env.TRIPCODE_SALT || "";
-
-const dataPath = path.join(process.cwd(), "data", "threads.json");
-
-// 🔹 Génère une ID façon imageboard
+// ➕ Génère un ID style imageboard
 function generateChanId(): string {
   const timestamp = Date.now().toString();
   const random = Math.floor(Math.random() * 1000)
@@ -16,88 +12,54 @@ function generateChanId(): string {
   return timestamp.slice(-7) + random;
 }
 
-// 🔐 Hash de tripcode non réversible
-export function getTripcode(secret?: string): string {
-  if (!secret || !secret.trim()) return "";
-  const input = serverSalt + secret.trim();
-  const hash = crypto.createHash("sha256").update(input).digest("hex");
-  return `!${hash.slice(0, 8)}`;
-}
-
-type Message = {
-  id: string;
-  content: string;
-  createdAt: string;
-  tripcode: string;
-};
-
-type Thread = {
-  id: string;
-  title: string;
-  createdAt: string;
-  messages: Message[];
-};
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const { id } = req.query;
 
-  if (!id || typeof id !== "string") {
+  if (typeof id !== "string") {
     return res.status(400).json({ message: "ID invalide" });
   }
 
-  // 🟢 GET - Récupérer un thread
-  if (req.method === "GET") {
-    try {
-      const fileData = fs.readFileSync(dataPath, "utf8");
-      const threads: Thread[] = JSON.parse(fileData);
-      const thread = threads.find((t) => t.id === id);
+  try {
+    await connectToDatabase();
 
-      if (!thread)
+    if (req.method === "GET") {
+      const thread = await Thread.findOne({ id });
+      if (!thread) {
         return res.status(404).json({ message: "Thread introuvable" });
-
-      res.status(200).json(thread);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Erreur lecture thread" });
-    }
-  }
-
-  // 🟣 POST - Ajouter un message
-  else if (req.method === "POST") {
-    const { content, trip } = req.body;
-
-    if (!content || typeof content !== "string") {
-      return res.status(400).json({ message: "Contenu invalide" });
+      }
+      return res.status(200).json(thread);
     }
 
-    try {
-      const fileData = fs.readFileSync(dataPath, "utf8");
-      const threads: Thread[] = JSON.parse(fileData);
-      const threadIndex = threads.findIndex((t) => t.id === id);
+    if (req.method === "POST") {
+      const { content, trip } = req.body;
 
-      if (threadIndex === -1)
+      if (!content || typeof content !== "string") {
+        return res.status(400).json({ message: "Contenu invalide" });
+      }
+
+      const thread = await Thread.findOne({ id });
+      if (!thread) {
         return res.status(404).json({ message: "Thread non trouvé" });
+      }
 
-      const newMessage: Message = {
+      thread.messages.push({
         id: generateChanId(),
         content,
         createdAt: new Date().toISOString(),
-        tripcode: getTripcode(trip),
-      };
+        authorId: getTripcode(trip),
+      });
 
-      threads[threadIndex].messages.push(newMessage);
-      fs.writeFileSync(dataPath, JSON.stringify(threads, null, 2), "utf8");
-
-      res.status(201).json(threads[threadIndex]);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Erreur ajout message" });
+      await thread.save();
+      return res.status(201).json(thread);
     }
-  }
 
-  // ❌ Méthode non autorisée
-  else {
     res.setHeader("Allow", ["GET", "POST"]);
-    res.status(405).end(`Méthode ${req.method} non autorisée`);
+    return res.status(405).end(`Méthode ${req.method} non autorisée`);
+  } catch (error) {
+    console.error("[API ERROR]", error);
+    return res.status(500).json({ message: "Erreur interne serveur" });
   }
 }
