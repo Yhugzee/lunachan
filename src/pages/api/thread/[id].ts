@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
+const serverSalt = process.env.TRIPCODE_SALT || "";
+
 const dataPath = path.join(process.cwd(), "data", "threads.json");
 
 // 🔹 Génère une ID façon imageboard
@@ -15,14 +17,11 @@ function generateChanId(): string {
 }
 
 // 🔐 Hash de tripcode non réversible
-function getTripcode(secret?: string): string {
-  if (!secret || !secret.startsWith("#")) return ""; // chaîne vide si anonyme
-  const hash = crypto
-    .createHash("sha256")
-    .update(secret)
-    .digest("hex")
-    .slice(0, 8);
-  return `!${hash}`;
+export function getTripcode(secret?: string): string {
+  if (!secret || !secret.trim()) return "";
+  const input = serverSalt + secret.trim();
+  const hash = crypto.createHash("sha256").update(input).digest("hex");
+  return `!${hash.slice(0, 8)}`;
 }
 
 type Message = {
