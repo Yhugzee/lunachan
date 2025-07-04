@@ -1,12 +1,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-
-type Thread = {
-  id: string;
-  title: string;
-  createdAt: string;
-};
+import { getTripColor } from "@/lib/color";
+import type { Thread } from "@/types/thread";
 
 export default function HomePage() {
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -42,6 +38,7 @@ export default function HomePage() {
   return (
     <main style={{ padding: "2rem", maxWidth: 800, margin: "0 auto" }}>
       <h1>Lunachan 🌙</h1>
+
       <form onSubmit={handleCreateThread} style={{ marginBottom: "2rem" }}>
         <input
           type="text"
@@ -69,22 +66,39 @@ export default function HomePage() {
 
       <h2>🧵 Threads récents</h2>
       <ul>
-        {threads.map((thread) => (
-          <li key={thread.id} style={{ marginBottom: "1rem" }}>
-            <Link href={`/thread/${thread.id}`}>
-              <strong
-                style={{
-                  cursor: "pointer",
-                  color: "white",
-                }}
-              >
-                {thread.title}
-              </strong>
-            </Link>
-            <br />
-            <small>{new Date(thread.createdAt).toLocaleString()}</small>
-          </li>
-        ))}
+        {threads.map((thread) => {
+          const firstMsg = thread.messages?.[0];
+          const tripcode = firstMsg?.tripcode;
+
+          return (
+            <li key={thread.id} style={{ marginBottom: "1rem" }}>
+              <Link href={`/thread/${thread.id}`}>
+                <strong
+                  style={{
+                    cursor: "pointer",
+                    color: "white",
+                  }}
+                >
+                  {thread.title}
+                  {tripcode && (
+                    <span
+                      style={{
+                        marginLeft: "0.5rem",
+                        color: getTripColor(tripcode),
+                        fontSize: "0.9rem",
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {tripcode.replace(/^!+/, "!")}
+                    </span>
+                  )}
+                </strong>
+              </Link>
+              <br />
+              <small>{new Date(thread.createdAt).toLocaleString()}</small>
+            </li>
+          );
+        })}
       </ul>
     </main>
   );
