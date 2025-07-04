@@ -89,7 +89,7 @@ export default function HomePage() {
                         fontFamily: "monospace",
                       }}
                     >
-                      {tripcode}
+                      {tripcode.replace(/^!+/, "!")}
                     </span>
                   )}
                 </strong>
