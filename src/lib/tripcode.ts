@@ -1,4 +1,3 @@
-// src/lib/tripcode.ts
 import crypto from "crypto";
 
 const serverSalt = process.env.TRIPCODE_SALT || "";

@@ -1,16 +1,19 @@
 import { Schema, model, models } from "mongoose";
 
-const MessageSchema = new Schema({
-  id: String,
-  content: String,
-  createdAt: String,
-  authorId: String,
-});
+const MessageSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    content: { type: String, required: true },
+    createdAt: { type: String, required: true },
+    tripcode: { type: String, required: false }, // facultatif mais bien défini
+  },
+  { _id: false }, // 🔹 pour éviter d’avoir un _id automatique par sous-document
+);
 
 const ThreadSchema = new Schema({
-  id: String,
-  title: String,
-  createdAt: String,
+  id: { type: String, required: true },
+  title: { type: String, required: true },
+  createdAt: { type: String, required: true },
   messages: [MessageSchema],
 });
 

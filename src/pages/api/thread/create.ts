@@ -29,32 +29,31 @@ export default async function handler(
     typeof title !== "string" ||
     typeof content !== "string"
   ) {
-    return res.status(400).json({ message: "Données invalides" });
+    return res.status(400).json({ message: "Titre ou contenu manquant" });
   }
 
   try {
     await connectToDatabase();
 
-    const threadId = generateChanId();
-    const createdAt = new Date().toISOString();
-
-    const newThread = await Thread.create({
-      id: threadId,
+    const newThread = new Thread({
+      id: generateChanId(),
       title,
-      createdAt,
+      createdAt: new Date().toISOString(),
       messages: [
         {
           id: generateChanId(),
           content,
-          createdAt,
-          authorId: getTripcode(trip),
+          createdAt: new Date().toISOString(),
+          tripcode: getTripcode(trip), // ✅ on ajoute le tripcode ici !
         },
       ],
     });
 
-    return res.status(201).json(newThread);
+    await newThread.save();
+
+    res.status(201).json(newThread);
   } catch (error) {
-    console.error("Erreur création thread:", error);
-    return res.status(500).json({ message: "Erreur serveur" });
+    console.error("Erreur création thread", error);
+    res.status(500).json({ message: "Erreur création thread" });
   }
 }
