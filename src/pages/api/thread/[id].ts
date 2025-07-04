@@ -44,10 +44,6 @@ export default async function handler(
       if (!thread) {
         return res.status(404).json({ message: "Thread non trouvé" });
       }
-
-      console.log("[TRIP]", trip);
-      console.log("[TRIPCODE]", getTripcode(trip));
-
       thread.messages.push({
         id: generateChanId(),
         content,
