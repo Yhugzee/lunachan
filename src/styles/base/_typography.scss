@@ -15,3 +15,17 @@ h1 {
 small {
   color: variables.$text-muted;
 }
+
+a {
+  color: white;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:hover {
+    opacity: 0.75; // petit effet subtil au survol
+  }
+}
