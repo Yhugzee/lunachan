@@ -5,6 +5,7 @@ import crypto from "crypto";
 
 const dataPath = path.join(process.cwd(), "data", "threads.json");
 
+// 🔹 Génère une ID façon imageboard
 function generateChanId(): string {
   const timestamp = Date.now().toString();
   const random = Math.floor(Math.random() * 1000)
@@ -13,22 +14,22 @@ function generateChanId(): string {
   return timestamp.slice(-7) + random;
 }
 
-// Fonction de tripcode façon imageboard
+// 🔐 Hash de tripcode non réversible
 function getTripcode(secret?: string): string {
-  if (!secret || !secret.startsWith("#")) return "Anonymous";
+  if (!secret || !secret.startsWith("#")) return ""; // chaîne vide si anonyme
   const hash = crypto
-    .createHash("sha1")
+    .createHash("sha256")
     .update(secret)
     .digest("hex")
     .slice(0, 8);
-  return `Anonymous !${hash}`;
+  return `!${hash}`;
 }
 
 type Message = {
   id: string;
   content: string;
   createdAt: string;
-  authorId: string;
+  tripcode: string;
 };
 
 type Thread = {
@@ -82,7 +83,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         id: generateChanId(),
         content,
         createdAt: new Date().toISOString(),
-        authorId: getTripcode(trip),
+        tripcode: getTripcode(trip),
       };
 
       threads[threadIndex].messages.push(newMessage);
