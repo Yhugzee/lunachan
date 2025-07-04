@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
-import { Thread, Message } from "@/types/thread";
+import { Thread } from "@/types/thread";
 import { getTripColor } from "@/lib/color";
 
 export default function ThreadPage() {
