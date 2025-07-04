@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
 type Thread = {
   id: string;
@@ -6,66 +8,84 @@ type Thread = {
   createdAt: string;
 };
 
-export default function Home() {
+export default function HomePage() {
   const [threads, setThreads] = useState<Thread[]>([]);
-  const [newTitle, setNewTitle] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [trip, setTrip] = useState("");
+  const router = useRouter();
 
-  // 🧠 Charger les threads au chargement de la page
+  // Charger les threads depuis l’API
   useEffect(() => {
     fetch("/api/threads")
       .then((res) => res.json())
-      .then((data) => setThreads(data));
+      .then(setThreads);
   }, []);
 
-  // 🧩 Créer un nouveau thread
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Soumettre un nouveau thread
+  const handleCreateThread = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    if (!title || !content) return;
 
-    setLoading(true);
-
-    const res = await fetch("/api/threads", {
+    const res = await fetch("/api/thread/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle }),
+      body: JSON.stringify({ title, content, trip }),
     });
 
-    const newThread = await res.json();
-    setThreads((prev) => [newThread, ...prev]);
-    setNewTitle("");
-    setLoading(false);
+    const data = await res.json();
+    if (res.ok) {
+      router.push(`/thread/${data.id}`);
+    }
   };
 
   return (
     <main style={{ padding: "2rem", maxWidth: 800, margin: "0 auto" }}>
       <h1>Lunachan 🌙</h1>
-
-      <form onSubmit={handleSubmit} style={{ marginBottom: "2rem" }}>
+      <form onSubmit={handleCreateThread} style={{ marginBottom: "2rem" }}>
         <input
           type="text"
           placeholder="Titre du thread"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          style={{ padding: "0.5rem", width: "80%", marginRight: "1rem" }}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
         />
-        <button type="submit" disabled={loading}>
-          {loading ? "Création..." : "Créer"}
-        </button>
+        <textarea
+          placeholder="Contenu initial du thread"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          rows={4}
+          style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
+        />
+        <input
+          type="text"
+          placeholder="Tripcode (optionnel)"
+          value={trip}
+          onChange={(e) => setTrip(e.target.value)}
+          style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
+        />
+        <button type="submit">Créer un nouveau thread</button>
       </form>
 
-      {threads.length === 0 ? (
-        <p>Aucun thread pour le moment.</p>
-      ) : (
-        <ul>
-          {threads.map((thread) => (
-            <li key={thread.id}>
-              <strong>{thread.title}</strong> <br />
-              <small>{new Date(thread.createdAt).toLocaleString()}</small>
-            </li>
-          ))}
-        </ul>
-      )}
+      <h2>🧵 Threads récents</h2>
+      <ul>
+        {threads.map((thread) => (
+          <li key={thread.id} style={{ marginBottom: "1rem" }}>
+            <Link href={`/thread/${thread.id}`}>
+              <strong
+                style={{
+                  cursor: "pointer",
+                  color: "white",
+                }}
+              >
+                {thread.title}
+              </strong>
+            </Link>
+            <br />
+            <small>{new Date(thread.createdAt).toLocaleString()}</small>
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }
