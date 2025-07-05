@@ -1,5 +1,5 @@
+import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
 import Link from "next/link";
 import type { Thread } from "@/types/thread";
 
@@ -8,25 +8,40 @@ export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [threads, setThreads] = useState<Thread[]>([]);
 
+  // ✅ Check du cookie si déjà connecté
   useEffect(() => {
-    if (authenticated) {
+    const saved = Cookies.get("admin-auth");
+    if (saved && saved === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+      setAuthenticated(true);
+      setPassword(saved);
+    }
+  }, []);
+
+  // 🔄 Charge les threads si connecté
+  useEffect(() => {
+    if (authenticated && password) {
       fetch("/api/admin/threads", {
         headers: {
           Authorization: `Bearer ${password}`,
         },
       })
         .then((res) => res.json())
-        .then((data) => {
-          setThreads(data);
-        });
+        .then(setThreads);
     }
   }, [authenticated, password]);
 
   const handleLogin = () => {
     if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setAuthenticated(true);
+      Cookies.set("admin-auth", password, { expires: 7 }); // ✅ cookie 7 jours
     } else {
       alert("Mot de passe incorrect");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleLogin();
     }
   };
 
@@ -38,6 +53,7 @@ export default function AdminPage() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={handleKeyDown} // ⌨️ appuie sur Entrée
           placeholder="Mot de passe admin"
           style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
         />
@@ -46,9 +62,36 @@ export default function AdminPage() {
     );
   }
 
+  const handleLogout = () => {
+    Cookies.remove("admin-auth");
+    setAuthenticated(false);
+    setPassword("");
+  };
+
+  const handleDeleteThread = async (id: string) => {
+    if (!confirm("Es-tu sûr de vouloir supprimer ce thread ?")) return;
+
+    const res = await fetch(`/api/admin/thread/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_PASSWORD}`,
+      },
+    });
+
+    if (res.ok) {
+      setThreads((prev) => prev.filter((t) => t.id !== id));
+    } else {
+      alert("Erreur lors de la suppression.");
+    }
+  };
+
   return (
     <main style={{ padding: "2rem" }}>
       <h1>🎛️ Panel Admin</h1>
+      <button onClick={handleLogout} className="logout-button">
+        🔓 Déconnexion
+      </button>
+
       <ul>
         {threads.map((thread) => (
           <li key={thread.id} style={{ marginBottom: "1.5rem" }}>
@@ -56,12 +99,17 @@ export default function AdminPage() {
             <br />
             <small>{new Date(thread.createdAt).toLocaleString()}</small>
             <br />
-            <Link href={`/thread/${thread.id}`}>
-              <button style={{ marginTop: "0.5rem", marginRight: "0.5rem" }}>
-                🔍 Voir
-              </button>
+            <Link
+              href={`/thread/${thread.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <button className="admin-button">🔍 Voir</button>
             </Link>
-            <button onClick={() => alert("Suppression à venir")}>
+            <button
+              className="delete-button"
+              onClick={() => handleDeleteThread(thread.id)}
+            >
               🗑 Supprimer
             </button>
           </li>
