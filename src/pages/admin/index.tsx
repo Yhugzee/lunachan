@@ -7,6 +7,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [remember, setRemember] = useState(false); // ✅ nouvelle case à cocher
 
   // ✅ Check du cookie si déjà connecté
   useEffect(() => {
@@ -33,7 +34,12 @@ export default function AdminPage() {
   const handleLogin = () => {
     if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setAuthenticated(true);
-      Cookies.set("admin-auth", password, { expires: 7 }); // ✅ cookie 7 jours
+
+      if (remember) {
+        Cookies.set("admin-auth", password, { expires: 7 }); // Cookie 7 jours
+      } else {
+        Cookies.set("admin-auth", password); // Cookie session
+      }
     } else {
       alert("Mot de passe incorrect");
     }
@@ -44,23 +50,6 @@ export default function AdminPage() {
       handleLogin();
     }
   };
-
-  if (!authenticated) {
-    return (
-      <main style={{ padding: "2rem" }}>
-        <h1>🔒 Accès Admin</h1>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={handleKeyDown} // ⌨️ appuie sur Entrée
-          placeholder="Mot de passe admin"
-          style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
-        />
-        <button onClick={handleLogin}>Se connecter</button>
-      </main>
-    );
-  }
 
   const handleLogout = () => {
     Cookies.remove("admin-auth");
@@ -84,6 +73,32 @@ export default function AdminPage() {
       alert("Erreur lors de la suppression.");
     }
   };
+
+  if (!authenticated) {
+    return (
+      <main style={{ padding: "2rem" }}>
+        <h1>🔒 Accès Admin</h1>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Mot de passe admin"
+          style={{ padding: "0.5rem", marginBottom: "0.5rem", width: "100%" }}
+        />
+        <label style={{ display: "block", marginBottom: "1rem" }}>
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            style={{ marginRight: "0.5rem" }}
+          />
+          Rester connecté
+        </label>
+        <button onClick={handleLogin}>Se connecter</button>
+      </main>
+    );
+  }
 
   return (
     <main style={{ padding: "2rem" }}>
