@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { Thread } from "@/types/thread";
 
 export default function AdminPage() {
-  const router = useRouter();
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [threads, setThreads] = useState<Thread[]>([]);
