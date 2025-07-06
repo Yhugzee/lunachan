@@ -4,44 +4,51 @@ import Link from "next/link";
 import type { Thread } from "@/types/thread";
 
 export default function AdminPage() {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [threads, setThreads] = useState<Thread[]>([]);
-  const [remember, setRemember] = useState(false); // ✅ nouvelle case à cocher
 
-  // ✅ Check du cookie si déjà connecté
+  // ✅ Vérifie s’il y a un cookie d’auth
   useEffect(() => {
-    const saved = Cookies.get("admin-auth");
-    if (saved && saved === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+    const token = Cookies.get("admin-auth");
+    if (token) {
       setAuthenticated(true);
-      setPassword(saved);
     }
   }, []);
 
-  // 🔄 Charge les threads si connecté
+  // ✅ Charge les threads après authentification
   useEffect(() => {
-    if (authenticated && password) {
+    if (authenticated) {
       fetch("/api/admin/threads", {
         headers: {
-          Authorization: `Bearer ${password}`,
+          Authorization: `Bearer ${Cookies.get("admin-auth")}`,
         },
       })
         .then((res) => res.json())
-        .then(setThreads);
+        .then((data) => {
+          console.log("▶ Threads API response:", data);
+          setThreads(Array.isArray(data) ? data : data.threads || []);
+        });
     }
-  }, [authenticated, password]);
+  }, [authenticated]);
 
-  const handleLogin = () => {
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+  const handleLogin = async () => {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      Cookies.set("admin-auth", data.token, { expires: 7 });
+      console.log("✅ Token reçu et enregistré :", data.token);
       setAuthenticated(true);
-
-      if (remember) {
-        Cookies.set("admin-auth", password, { expires: 7 }); // Cookie 7 jours
-      } else {
-        Cookies.set("admin-auth", password); // Cookie session
-      }
+      // TEMP FIX : on recharge la page pour déclencher le useEffect qui charge les threads
+      window.location.reload();
     } else {
-      alert("Mot de passe incorrect");
+      alert("Échec de la connexion : identifiants invalides.");
     }
   };
 
@@ -54,6 +61,7 @@ export default function AdminPage() {
   const handleLogout = () => {
     Cookies.remove("admin-auth");
     setAuthenticated(false);
+    setUsername("");
     setPassword("");
   };
 
@@ -63,7 +71,7 @@ export default function AdminPage() {
     const res = await fetch(`/api/admin/thread/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_PASSWORD}`,
+        Authorization: `Bearer ${Cookies.get("admin-auth")}`,
       },
     });
 
@@ -74,32 +82,32 @@ export default function AdminPage() {
     }
   };
 
+  // === UI de connexion ===
   if (!authenticated) {
     return (
       <main style={{ padding: "2rem" }}>
-        <h1>🔒 Accès Admin</h1>
+        <h1>🔐 Connexion Admin</h1>
+        <input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Nom d'utilisateur"
+          style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
+        />
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Mot de passe admin"
-          style={{ padding: "0.5rem", marginBottom: "0.5rem", width: "100%" }}
+          placeholder="Mot de passe"
+          style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
         />
-        <label style={{ display: "block", marginBottom: "1rem" }}>
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={(e) => setRemember(e.target.checked)}
-            style={{ marginRight: "0.5rem" }}
-          />
-          Rester connecté
-        </label>
         <button onClick={handleLogin}>Se connecter</button>
       </main>
     );
   }
 
+  // === UI admin ===
   return (
     <main style={{ padding: "2rem" }}>
       <h1>🎛️ Panel Admin</h1>
