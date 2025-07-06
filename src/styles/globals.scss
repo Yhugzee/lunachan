@@ -3,6 +3,7 @@
 @use 'base/typography';
 @use 'components/form';
 @use 'components/thread';
+@use "components/admin";
 
 main {
   padding: 2rem;

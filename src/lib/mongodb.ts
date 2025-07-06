@@ -3,7 +3,7 @@ import mongoose, { Mongoose } from "mongoose";
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error("🚨 MONGODB_URI manquant dans .env.local");
+  throw new Error("🚨 MONGODB_URI manquant dans .env");
 }
 
 // 🔧 Déclare un type global pour Mongoose dans Next.js
