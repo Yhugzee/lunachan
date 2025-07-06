@@ -1,8 +1,15 @@
-import { Schema, model, models } from "mongoose";
+import mongoose, { Schema, Document, Model } from "mongoose";
 
-const AdminSchema = new Schema({
+export interface IAdminUser extends Document {
+  username: string;
+  password: string;
+}
+
+const AdminUserSchema: Schema<IAdminUser> = new Schema({
   username: { type: String, required: true, unique: true },
-  passwordHash: { type: String, required: true },
+  password: { type: String, required: true },
 });
 
-export const Admin = models.Admin || model("Admin", AdminSchema);
+export const AdminUser: Model<IAdminUser> =
+  mongoose.models.AdminUser ||
+  mongoose.model<IAdminUser>("AdminUser", AdminUserSchema);
