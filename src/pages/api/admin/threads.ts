@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Thread } from "@/models/Thread";
-
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+import { AdminUser } from "@/models/Admin";
 
 export default async function handler(
   req: NextApiRequest,
@@ -13,8 +12,15 @@ export default async function handler(
   }
 
   const auth = req.headers.authorization;
-  if (!auth || auth !== `Bearer ${ADMIN_PASSWORD}`) {
+  if (!auth || !auth.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Accès refusé" });
+  }
+
+  const token = auth.replace("Bearer ", "");
+
+  const admin = await AdminUser.findOne();
+  if (!admin || token !== admin.password) {
+    return res.status(401).json({ message: "Authentification invalide" });
   }
 
   try {
