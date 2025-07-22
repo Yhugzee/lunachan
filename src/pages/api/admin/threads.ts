@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Thread } from "@/models/Thread";
-import { AdminUser } from "@/models/Admin";
+import { AdminModel } from "@/models/Admin";
+import jwt from "jsonwebtoken";
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,17 +19,23 @@ export default async function handler(
 
   const token = auth.replace("Bearer ", "");
 
-  const admin = await AdminUser.findOne();
-  if (!admin || token !== admin.password) {
-    return res.status(401).json({ message: "Authentification invalide" });
-  }
-
   try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+      id: string;
+    };
+
+    // Vérifier que l’admin existe (sécurité supplémentaire)
+    const admin = await AdminModel.findById(decoded.id);
+    if (!admin) {
+      return res.status(401).json({ message: "Admin introuvable ou invalide" });
+    }
+
     await connectToDatabase();
+
     const threads = await Thread.find().sort({ createdAt: -1 }).lean();
-    res.status(200).json(threads);
+    return res.status(200).json(threads);
   } catch (error) {
     console.error("[ADMIN THREADS ERROR]", error);
-    res.status(500).json({ message: "Erreur interne serveur" });
+    return res.status(401).json({ message: "Token invalide ou expiré" });
   }
 }
