@@ -1,7 +1,9 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "@/lib/mongodb";
-import { AdminUser } from "@/models/Admin";
+import { AdminModel, IAdminUser } from "@/models/Admin";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,23 +17,33 @@ export default async function handler(
 
   try {
     await connectToDatabase();
-    const user = await AdminUser.findOne({ username });
+
+    const user = (await AdminModel.findOne({ username })) as IAdminUser | null;
 
     if (!user) {
       console.log("❌ Utilisateur non trouvé");
       return res.status(401).json({ success: false });
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
+    const typedUser = user as IAdminUser & { _id: mongoose.Types.ObjectId };
+
+    const isValid = await bcrypt.compare(password, typedUser.password);
+    if (!isValid) {
       console.log("❌ Mot de passe incorrect");
       return res.status(401).json({ success: false });
     }
 
-    console.log("✅ Connexion réussie");
-    res.status(200).json({ token: user.password });
+    // Harmonisation : le token contient `id` pour être cohérent avec threads.ts
+    const token = jwt.sign(
+      { id: typedUser._id.toString(), username: typedUser.username },
+      process.env.JWT_SECRET!,
+      { expiresIn: "7d" },
+    );
+
+    console.log("✅ Connexion réussie avec JWT");
+    return res.status(200).json({ token });
   } catch (err) {
     console.error("Erreur API login:", err);
-    res.status(500).json({ success: false });
+    return res.status(500).json({ success: false });
   }
 }
