@@ -27,7 +27,6 @@ export default function AdminPage() {
       })
         .then((res) => res.json())
         .then((data) => {
-          console.log("▶ Threads API response:", data);
           setThreads(Array.isArray(data) ? data : data.threads || []);
         });
     }
