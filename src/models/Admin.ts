@@ -10,6 +10,6 @@ const AdminUserSchema: Schema<IAdminUser> = new Schema({
   password: { type: String, required: true },
 });
 
-export const AdminUser: Model<IAdminUser> =
+export const AdminModel: Model<IAdminUser> =
   mongoose.models.AdminUser ||
   mongoose.model<IAdminUser>("AdminUser", AdminUserSchema);
