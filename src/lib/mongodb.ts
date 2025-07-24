@@ -1,14 +1,27 @@
-import mongoose from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
-
 if (!MONGODB_URI) {
   throw new Error("⚠️ MONGODB_URI non défini dans .env");
 }
 
-const cached = (global as any).mongoose || { conn: null, promise: null };
+// On définit un type pour le cache global
+interface MongooseCache {
+  conn: Mongoose | null;
+  promise: Promise<Mongoose> | null;
+}
 
-export async function connectToDatabase() {
+// Étend le type de `global` pour TypeScript
+declare global {
+  var mongooseCache: MongooseCache | undefined;
+}
+
+const cached: MongooseCache = global.mongooseCache || {
+  conn: null,
+  promise: null,
+};
+
+export async function connectToDatabase(): Promise<Mongoose> {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
@@ -28,7 +41,7 @@ export async function connectToDatabase() {
   }
 
   cached.conn = await cached.promise;
+  global.mongooseCache = cached;
+
   return cached.conn;
 }
-
-(global as any).mongoose = cached;
