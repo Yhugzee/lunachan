@@ -12,6 +12,7 @@
     "dev:db": "node scripts/check-db.cjs && next dev"
   },
   "dependencies": {
+    "@vercel/speed-insights": "^1.2.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.0.1",
     "jsonwebtoken": "^9.0.2",
