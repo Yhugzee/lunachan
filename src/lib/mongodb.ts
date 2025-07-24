@@ -1,36 +1,34 @@
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error("🚨 MONGODB_URI manquant dans .env");
+  throw new Error("⚠️ MONGODB_URI non défini dans .env");
 }
 
-// 🔧 Déclare un type global pour Mongoose dans Next.js
-declare global {
-  var mongoose: { conn: Mongoose | null; promise: Promise<Mongoose> | null };
-}
+const cached = (global as any).mongoose || { conn: null, promise: null };
 
-// ⚠️ Permet de réutiliser le cache même avec hot reload
-const globalWithMongoose = global as typeof globalThis & {
-  mongoose: { conn: Mongoose | null; promise: Promise<Mongoose> | null };
-};
-
-let cached = globalWithMongoose.mongoose;
-
-if (!cached) {
-  cached = globalWithMongoose.mongoose = { conn: null, promise: null };
-}
-
-export async function connectToDatabase(): Promise<Mongoose> {
+export async function connectToDatabase() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI!, {
-      bufferCommands: false,
-    });
+    cached.promise = mongoose
+      .connect(MONGODB_URI as string, {
+        bufferCommands: false,
+        serverSelectionTimeoutMS: 5000,
+      })
+      .then((mongooseInstance) => {
+        console.log(`✅ Connecté à MongoDB (${process.env.NODE_ENV})`);
+        return mongooseInstance;
+      })
+      .catch((err) => {
+        console.error("❌ Erreur de connexion MongoDB:", err);
+        throw err;
+      });
   }
 
   cached.conn = await cached.promise;
   return cached.conn;
 }
+
+(global as any).mongoose = cached;
