@@ -18,6 +18,6 @@ Ce projet utilise :
 ### 1) Cloner le projet
 
 ```bash
-git clone https://github.com/<ton-repo>
+git clone https://github.com/Yhugzee/lunachan
 cd lunachan
 npm install
