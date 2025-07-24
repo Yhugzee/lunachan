@@ -1,17 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Lunachan – Imageboard avec Panel Admin
 
-## Getting Started
+## 🚀 Description
 
-First, run the development server:
+Lunachan est un imageboard anonyme inspiré des boards classiques, avec un **panel admin sécurisé (JWT)** pour gérer les
+threads.
+
+Ce projet utilise :
+
+- **Next.js 15** (API routes pour backend + frontend)
+- **MongoDB** (Atlas pour le dev, Railway pour la prod)
+- **JWT** pour l'authentification de l’admin
+
+---
+
+## ⚙️ Installation et configuration
+
+### 1) Cloner le projet
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+git clone https://github.com/<ton-repo>
+cd lunachan
+npm install
