@@ -61,6 +61,21 @@ export default function HomePage() {
           onChange={(e) => setTrip(e.target.value)}
           style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
         />
+        <span
+          className="trip-help"
+          aria-label="Aide tripcode"
+          role="note"
+          tabIndex={0}
+        >
+          ?
+          <span className="tooltip">
+            Un tripcode est une signature générée à partir d’un mot de passe
+            écrit après un « # » dans ce champ. Il permet d’identifier le même
+            auteur sans créer de compte. Exemple : entrez « #monSecret » et
+            votre message affichera un tripcode du type « !abc123… ». N’utilisez
+            pas de mots de passe importants !
+          </span>
+        </span>
         <button type="submit">Créer un nouveau thread</button>
       </form>
 
