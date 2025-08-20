@@ -2,12 +2,17 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Thread } from "@/models/Thread";
 import { withAdminAuth } from "@/lib/withAdminAuth";
+import { rateLimit } from "@/lib/rateLimit";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
   await connectToDatabase();
+
+  // Rate limit: 5 req/min
+  const ok = await rateLimit(req, res, { windowMs: 60_000, max: 5 });
+  if (!ok) return;
 
   return withAdminAuth(req, res, async () => {
     if (req.method !== "GET") {
