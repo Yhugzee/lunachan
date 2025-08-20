@@ -42,7 +42,6 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await res.json();
       Cookies.set("admin-auth", data.token, { expires: 7 });
-      console.log("✅ Token reçu et enregistré :", data.token);
       setAuthenticated(true);
       // TEMP FIX : on recharge la page pour déclencher le useEffect qui charge les threads
       window.location.reload();
