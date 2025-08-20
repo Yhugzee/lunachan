@@ -4,6 +4,8 @@ import { AdminModel, IAdminUser } from "@/models/Admin";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { ENV } from "@/lib/env";
+import { rateLimit } from "@/lib/rateLimit";
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,6 +14,10 @@ export default async function handler(
   if (req.method !== "POST") {
     return res.status(405).end();
   }
+
+  // Rate limit: 10 req/min
+  const ok = await rateLimit(req, res, { windowMs: 60_000, max: 10 });
+  if (!ok) return;
 
   const { username, password } = req.body;
 
@@ -36,7 +42,7 @@ export default async function handler(
     // Harmonisation : le token contient `id` pour être cohérent avec threads.ts
     const token = jwt.sign(
       { id: typedUser._id.toString(), username: typedUser.username },
-      process.env.JWT_SECRET!,
+      ENV.JWT_SECRET!,
       { expiresIn: "7d" },
     );
 
