@@ -1,6 +1,7 @@
 import crypto from "crypto";
+import { ENV } from "./env";
 
-const serverSalt = process.env.TRIPCODE_SALT || "";
+const serverSalt = ENV.TRIPCODE_SALT || "";
 
 export function getTripcode(secret?: string): string | undefined {
   if (!secret || !secret.startsWith("#") || !serverSalt) return undefined;

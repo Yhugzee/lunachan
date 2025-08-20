@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { AdminModel } from "@/models/Admin";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { ENV } from "./env";
 
 type NextHandler = () => Promise<void>;
 
@@ -18,7 +19,7 @@ export async function withAdminAuth(
   const token = auth.replace("Bearer ", "");
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+    const decoded = jwt.verify(token, ENV.JWT_SECRET as string) as {
       id: string;
     };
     const admin = await AdminModel.findById(decoded.id);
