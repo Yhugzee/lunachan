@@ -6,6 +6,7 @@ const MessageSchema = new Schema(
     content: { type: String, required: true },
     createdAt: { type: String, required: true },
     tripcode: { type: String, required: false }, // facultatif mais bien défini
+    imageUrl: { type: String, required: false }, // URL publique R2 (optionnel)
   },
   { _id: false }, // 🔹 pour éviter d’avoir un _id automatique par sous-document
 );
