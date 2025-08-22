@@ -63,6 +63,15 @@ export default function ThreadPage() {
                   <small>{new Date(msg.createdAt).toLocaleString()}</small>
                 </div>
                 <div style={{ marginTop: "0.4rem" }}>
+                  {msg.imageUrl && (
+                    <div style={{ marginBottom: "0.5rem" }}>
+                      <img
+                        src={msg.imageUrl}
+                        alt="image du message"
+                        style={{ maxWidth: "100%", borderRadius: 6 }}
+                      />
+                    </div>
+                  )}
                   <p>{msg.content}</p>
                   <small style={{ color: "#888" }}>ID: {msg.id}</small>
                 </div>
