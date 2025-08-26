@@ -1,6 +1,5 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Layout from "@/components/Layout";
 import { Thread } from "@/types/thread";
 import { getTripColor } from "@/lib/color";
@@ -66,13 +65,10 @@ export default function ThreadPage() {
                 <div style={{ marginTop: "0.4rem" }}>
                   {msg.imageUrl && (
                     <div style={{ marginBottom: "0.5rem" }}>
-                      <Image
+                      <img
                         src={msg.imageUrl}
                         alt="image du message"
-                        width={1024}
-                        height={768}
-                        sizes="100vw"
-                        style={{ width: "100%", height: "auto", borderRadius: 6 }}
+                        style={{ maxWidth: "100%", borderRadius: 6 }}
                       />
                     </div>
                   )}

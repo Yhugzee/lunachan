@@ -55,14 +55,13 @@ export default async function handler(
     const publicUrl = `${publicBase}/${key}`;
 
     return res.status(200).json({ ok: true, key, url: publicUrl });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
+  } catch (err: any) {
     console.error("[upload-proxy] error:", err);
     return res
       .status(500)
       .json({
         error: "Upload R2 échoué",
-        details: message,
+        details: String(err?.message || err),
       });
   }
 }
