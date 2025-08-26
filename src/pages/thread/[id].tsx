@@ -1,8 +1,9 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
-import { Thread } from "@/types/thread";
+import type { Thread } from "@/types/thread";
 import { getTripColor } from "@/lib/color";
+import Image from "next/image";
 
 export default function ThreadPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function ThreadPage() {
     if (!id) return;
     fetch(`/api/thread/${id}`)
       .then((res) => res.json())
-      .then((data) => setThread(data));
+      .then((data) => setThread(data as Thread));
   }, [id]);
 
   const handlePostMessage = async (e: React.FormEvent) => {
@@ -29,7 +30,7 @@ export default function ThreadPage() {
       body: JSON.stringify({ content: newMessage, trip: tripcodeInput }),
     });
 
-    const updatedThread = await res.json();
+    const updatedThread = (await res.json()) as Thread;
     setThread(updatedThread);
     setNewMessage("");
     setTripcodeInput("");
@@ -65,10 +66,16 @@ export default function ThreadPage() {
                 <div style={{ marginTop: "0.4rem" }}>
                   {msg.imageUrl && (
                     <div style={{ marginBottom: "0.5rem" }}>
-                      <img
+                      <Image
                         src={msg.imageUrl}
                         alt="image du message"
-                        style={{ maxWidth: "100%", borderRadius: 6 }}
+                        width={800}
+                        height={600}
+                        style={{
+                          maxWidth: "100%",
+                          borderRadius: 6,
+                          height: "auto",
+                        }}
                       />
                     </div>
                   )}
