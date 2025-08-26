@@ -21,7 +21,7 @@ export default async function handler(
     return res.status(405).end(`Méthode ${req.method} non autorisée`);
   }
 
-  const { title, content, trip } = req.body;
+  const { title, content, trip, imageUrl } = req.body;
 
   if (
     !title ||
@@ -45,6 +45,7 @@ export default async function handler(
           content,
           createdAt: new Date().toISOString(),
           tripcode: getTripcode(trip), // ✅ on ajoute le tripcode ici !
+          imageUrl: typeof imageUrl === "string" ? imageUrl : undefined,
         },
       ],
     });
