@@ -30,7 +30,7 @@ export default async function handler(
     });
     const uploadUrl = await getSignedUrl(s3, cmd, { expiresIn: 300 });
     res.status(200).json({ uploadUrl });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[upload-url] error:", err);
     res.status(500).json({ error: "Erreur génération URL présignée" });
   }
