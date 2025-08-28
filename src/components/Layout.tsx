@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ReactNode } from "react";
 
+/**
+ * Layout générique pour les pages publiques (en-tête simple + conteneur centré).
+ */
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <div style={{ padding: "2rem", maxWidth: 800, margin: "0 auto" }}>

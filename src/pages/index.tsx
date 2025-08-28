@@ -4,6 +4,10 @@ import { useRouter } from "next/router";
 import { getTripColor } from "@/lib/color";
 import type { Thread } from "@/types/thread";
 
+/**
+ * Génère un nom de fichier horodaté pseudo-aléatoire, utile pour stocker
+ * des fichiers (ex: R2/S3) en évitant les collisions.
+ */
 function randomName(ext = "") {
   const buf = new Uint8Array(16);
   crypto.getRandomValues(buf);
@@ -23,7 +27,7 @@ export default function HomePage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const router = useRouter();
 
-  // Charger les threads
+  // Au montage: récupérer la liste des threads
   useEffect(() => {
     fetch("/api/threads")
       .then((res) => res.json())
@@ -31,7 +35,7 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  // Création thread
+  // Création d'un thread (avec upload image optionnel)
   const handleCreateThread = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content) return;
@@ -42,6 +46,7 @@ export default function HomePage() {
       const ext = imageFile.name.split(".").pop()?.toLowerCase() || "";
       const key = randomName(ext);
 
+      // Upload direct via proxy d'API (envoi binaire brut)
       const r = await fetch("/api/upload-proxy", {
         method: "POST",
         headers: {
@@ -61,7 +66,7 @@ export default function HomePage() {
       imageUrl = url;
     }
 
-    // Envoi du thread avec imageUrl (si présent)
+    // Envoie le thread au backend (inclut l'URL d'image si présente)
     const res = await fetch("/api/thread/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -109,6 +114,7 @@ export default function HomePage() {
           onChange={(e) => setImageFile(e.target.files?.[0] || null)}
           style={{ marginBottom: "0.5rem" }}
         />
+        {/* Aide accessible sur le tripcode (info-bulle au survol/clavier) */}
         <span
           className="trip-help"
           aria-label="Aide tripcode"

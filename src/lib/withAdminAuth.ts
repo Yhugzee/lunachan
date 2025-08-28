@@ -5,6 +5,11 @@ import { ENV } from "./env";
 
 type NextHandler = () => Promise<void>;
 
+/**
+ * Middleware API pour protéger les routes admin via JWT dans l'en-tête Authorization.
+ * Attend un header: `Authorization: Bearer <token>`.
+ * Si le token est valide et correspond à un admin existant, appelle `next()`.
+ */
 export async function withAdminAuth(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -29,7 +34,8 @@ export async function withAdminAuth(
       return;
     }
 
-    req.admin = admin; // maintenant reconnu comme `IAdminUser`
+    // Attache l'admin à la requête pour les handlers en aval
+    req.admin = admin;
     await next();
   } catch (error) {
     console.error("[AUTH ERROR]", error);

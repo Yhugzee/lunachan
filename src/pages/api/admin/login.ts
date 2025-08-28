@@ -7,6 +7,13 @@ import mongoose from "mongoose";
 import { ENV } from "@/lib/env";
 import { rateLimit } from "@/lib/rateLimit";
 
+/**
+ * Endpoint de connexion admin.
+ * - Méthode: POST
+ * - Rate limit: 10 requêtes/minute par client
+ * - Corps attendu: { username, password }
+ * - Réponse: { token } en cas de succès
+ */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -15,7 +22,7 @@ export default async function handler(
     return res.status(405).end();
   }
 
-  // Rate limit: 10 req/min
+  // Anti-abus: limite à 10 req/min par IP
   const ok = await rateLimit(req, res, { windowMs: 60_000, max: 10 });
   if (!ok) return;
 
@@ -39,7 +46,7 @@ export default async function handler(
       return res.status(401).json({ success: false });
     }
 
-    // Harmonisation : le token contient `id` pour être cohérent avec threads.ts
+    // Le token inclut `id` pour rester cohérent avec l'auth des autres endpoints
     const token = jwt.sign(
       { id: typedUser._id.toString(), username: typedUser.username },
       ENV.JWT_SECRET!,
