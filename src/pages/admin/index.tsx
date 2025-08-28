@@ -3,13 +3,19 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Thread } from "@/types/thread";
 
+/**
+ * Page d'administration minimale:
+ * - Gère une session via un cookie JWT ("admin-auth").
+ * - Liste les threads après authentification.
+ * - Permet de supprimer un thread.
+ */
 export default function AdminPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [threads, setThreads] = useState<Thread[]>([]);
 
-  // ✅ Vérifie s’il y a un cookie d’auth
+  // Vérifie la présence du cookie d'auth au chargement
   useEffect(() => {
     const token = Cookies.get("admin-auth");
     if (token) {
@@ -17,7 +23,7 @@ export default function AdminPage() {
     }
   }, []);
 
-  // ✅ Charge les threads après authentification
+  // Charge les threads après authentification
   useEffect(() => {
     if (authenticated) {
       fetch("/api/admin/threads", {
@@ -43,7 +49,7 @@ export default function AdminPage() {
       const data = await res.json();
       Cookies.set("admin-auth", data.token, { expires: 7 });
       setAuthenticated(true);
-      // TEMP FIX : on recharge la page pour déclencher le useEffect qui charge les threads
+      // Recharge la page pour relancer la récupération des threads
       window.location.reload();
     } else {
       alert("Échec de la connexion : identifiants invalides.");
