@@ -5,18 +5,17 @@ import { getTripColor } from "@/lib/color";
 import type { Thread } from "@/types/thread";
 
 /**
- * Génère un nom de fichier horodaté pseudo-aléatoire, utile pour stocker
- * des fichiers (ex: R2/S3) en évitant les collisions.
+ * Génère un nom de fichier pseudo-aléatoire (sans préfixe date).
+ * Le serveur ajoutera "YYYY-MM-DD/" dans la key finale.
  */
-function randomName(ext = "") {
+function randomBasename(ext = "") {
   const buf = new Uint8Array(16);
   crypto.getRandomValues(buf);
   const id = Array.from(buf)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("")
     .slice(0, 24);
-  const day = new Date().toISOString().slice(0, 10);
-  return `${day}/${id}${ext ? `.${ext}` : ""}`;
+  return `${id}${ext ? `.${ext}` : ""}`;
 }
 
 export default function HomePage() {
@@ -44,26 +43,36 @@ export default function HomePage() {
 
     if (imageFile) {
       const ext = imageFile.name.split(".").pop()?.toLowerCase() || "";
-      const key = randomName(ext);
+      const fileName = randomBasename(ext);
 
-      // Upload direct via proxy d'API (envoi binaire brut)
-      const r = await fetch("/api/upload-proxy", {
-        method: "POST",
-        headers: {
-          "x-file-key": key,
-          "x-file-type": imageFile.type || "application/octet-stream",
-        },
-        body: imageFile,
-      });
+      try {
+        // Upload via proxy API (binaire brut, headers attendus par ton handler)
+        const r = await fetch("/api/upload-proxy", {
+          method: "POST",
+          headers: {
+            "x-file-name": fileName, // <-- important
+            "x-file-type": imageFile.type || "application/octet-stream",
+            "Content-Type": imageFile.type || "application/octet-stream",
+          },
+          body: imageFile,
+        });
 
-      if (!r.ok) {
-        const txt = await r.text().catch(() => "");
-        alert(`Échec upload R2: ${r.status} ${txt}`);
+        if (!r.ok) {
+          const txt = await r.text().catch(() => "");
+          alert(`Échec upload R2: ${r.status} ${txt}`);
+          return;
+        }
+
+        const { url } = (await r.json()) as {
+          ok: boolean;
+          key: string;
+          url: string;
+        };
+        imageUrl = url;
+      } catch (err) {
+        alert(`Échec upload R2: ${String(err)}`);
         return;
       }
-
-      const { url } = await r.json();
-      imageUrl = url;
     }
 
     // Envoie le thread au backend (inclut l'URL d'image si présente)

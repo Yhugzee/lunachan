@@ -49,18 +49,17 @@ export default async function handler(
   const fileType = headerFileType ?? qFileType ?? "application/octet-stream";
 
   if (!fileName) {
-    return res
-      .status(400)
-      .json({
-        error: "Nom de fichier manquant (x-file-name ou ?fileName=...)",
-      });
+    return res.status(400).json({
+      error: "Nom de fichier manquant (x-file-name ou ?fileName=...)",
+    });
   }
 
   try {
     const body = await streamToBuffer(req);
 
-    // Clé finale (tu peux préfixer si tu veux classer par date/dossier)
-    const key = fileName;
+    // --- Clé cohérente avec l’URL publique (préfixe date) ---
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const key = `${today}/${fileName}`;
 
     await s3.send(
       new PutObjectCommand({
@@ -68,11 +67,11 @@ export default async function handler(
         Key: key,
         Body: body,
         ContentType: fileType,
-        ACL: "private", // public via domain proxy/CDN ; modifie si besoin
+        // ACL: "private", // R2 ignore généralement ACL; laisse commenté si inutile
       }),
     );
 
-    // Construit l'URL publique si tu utilises un domaine public (ex: https://cdn.exemple.com)
+    // Construit l'URL publique (ex: https://pub-xxxx.r2.dev)
     const publicBase = process.env.R2_PUBLIC_DOMAIN!;
     const publicUrl = `${publicBase}/${key}`;
 

@@ -13,8 +13,8 @@ const s3 = new S3Client({
 });
 
 type Body = {
-  fileName?: string;
-  fileType?: string;
+  fileName?: string; // ex: "62271f2322b8c37a7581f585.jpg"
+  fileType?: string; // ex: "image/jpeg"
 };
 
 export default async function handler(
@@ -31,14 +31,22 @@ export default async function handler(
     return res.status(400).json({ error: "fileName et fileType requis" });
   }
 
+  // --- Clé cohérente avec l’URL publique (préfixe date) ---
+  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const key = `${today}/${fileName}`;
+
   try {
     const cmd = new PutObjectCommand({
       Bucket: process.env.R2_BUCKET!,
-      Key: fileName,
+      Key: key,
       ContentType: fileType,
     });
+
     const uploadUrl = await getSignedUrl(s3, cmd, { expiresIn: 300 }); // 5 min
-    return res.status(200).json({ uploadUrl });
+    const publicBase = process.env.R2_PUBLIC_DOMAIN!; // ex: https://pub-xxxx.r2.dev
+    const publicUrl = `${publicBase}/${key}`;
+
+    return res.status(200).json({ uploadUrl, key, publicUrl });
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error("[upload-url] error:", err.message);
