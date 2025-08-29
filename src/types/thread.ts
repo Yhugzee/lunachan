@@ -3,6 +3,7 @@ export type Message = {
   content: string;
   createdAt: string;
   tripcode: string;
+  imageUrl?: string;
 };
 
 export type Thread = {
