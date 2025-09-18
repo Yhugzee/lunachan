@@ -1,178 +1,47 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { getTripColor } from "@/lib/color";
-import type { Thread } from "@/types/thread";
 
-/**
- * Génère un nom de fichier pseudo-aléatoire (sans préfixe date).
- * Le serveur ajoutera "YYYY-MM-DD/" dans la key finale.
- */
-function randomBasename(ext = "") {
-  const buf = new Uint8Array(16);
-  crypto.getRandomValues(buf);
-  const id = Array.from(buf)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("")
-    .slice(0, 24);
-  return `${id}${ext ? `.${ext}` : ""}`;
-}
+type Board = {
+  key: string;
+  name: string;
+  description?: string;
+  isNSFW?: boolean;
+};
 
 export default function HomePage() {
-  const [threads, setThreads] = useState<Thread[]>([]);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [trip, setTrip] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const router = useRouter();
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Au montage: récupérer la liste des threads
   useEffect(() => {
-    fetch("/api/threads")
+    fetch("/api/boards")
       .then((res) => res.json())
-      .then(setThreads)
-      .catch(() => {});
+      .then(setBoards)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
-
-  // Création d'un thread (avec upload image optionnel)
-  const handleCreateThread = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title || !content) return;
-
-    let imageUrl: string | undefined;
-
-    if (imageFile) {
-      const ext = imageFile.name.split(".").pop()?.toLowerCase() || "";
-      const fileName = randomBasename(ext);
-
-      try {
-        // Upload via proxy API (binaire brut, headers attendus par ton handler)
-        const r = await fetch("/api/upload-proxy", {
-          method: "POST",
-          headers: {
-            "x-file-name": fileName, // <-- important
-            "x-file-type": imageFile.type || "application/octet-stream",
-            "Content-Type": imageFile.type || "application/octet-stream",
-          },
-          body: imageFile,
-        });
-
-        if (!r.ok) {
-          const txt = await r.text().catch(() => "");
-          alert(`Échec upload R2: ${r.status} ${txt}`);
-          return;
-        }
-
-        const { url } = (await r.json()) as {
-          ok: boolean;
-          key: string;
-          url: string;
-        };
-        imageUrl = url;
-      } catch (err) {
-        alert(`Échec upload R2: ${String(err)}`);
-        return;
-      }
-    }
-
-    // Envoie le thread au backend (inclut l'URL d'image si présente)
-    const res = await fetch("/api/thread/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content, trip, imageUrl }),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (res.ok) {
-      router.push(`/thread/${data.id}`);
-    } else {
-      alert("Création du thread échouée");
-    }
-  };
 
   return (
     <main style={{ padding: "2rem", maxWidth: 800, margin: "0 auto" }}>
       <h1>Lunachan 🌙</h1>
+      <p>Choisis un board pour parcourir ou créer un thread :</p>
 
-      <form onSubmit={handleCreateThread} style={{ marginBottom: "2rem" }}>
-        <input
-          type="text"
-          placeholder="Titre du thread"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
-        />
-        <textarea
-          placeholder="Contenu initial du thread"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={4}
-          style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
-        />
-        <input
-          type="text"
-          placeholder="Tripcode (optionnel)"
-          value={trip}
-          onChange={(e) => setTrip(e.target.value)}
-          style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
-        />
-        <input
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-          style={{ marginBottom: "0.5rem" }}
-        />
-        {/* Aide accessible sur le tripcode (info-bulle au survol/clavier) */}
-        <span
-          className="trip-help"
-          aria-label="Aide tripcode"
-          role="note"
-          tabIndex={0}
-        >
-          ?
-          <span className="tooltip">
-            Un tripcode est une signature générée à partir d’un mot de passe
-            écrit après un « # » dans ce champ. Il permet d’identifier le même
-            auteur sans créer de compte. Exemple : entrez « #monSecret » et
-            votre message affichera un tripcode du type « !abc123… ». N’utilisez
-            pas de mots de passe importants !
-          </span>
-        </span>
-        <button type="submit">Créer un nouveau thread</button>
-      </form>
+      {loading && <p>Chargement des boards…</p>}
 
-      <h2>🧵 Threads récents</h2>
-      <ul>
-        {threads.map((thread) => {
-          const firstMsg = thread.messages?.[0];
-          const tripcode = firstMsg?.tripcode;
-
-          return (
-            <li key={thread.id} style={{ marginBottom: "1rem" }}>
-              <Link href={`/thread/${thread.id}`}>
-                <strong style={{ cursor: "pointer", color: "white" }}>
-                  {thread.title}
-                  {tripcode && (
-                    <span
-                      style={{
-                        marginLeft: "0.5rem",
-                        color: getTripColor(tripcode),
-                        fontSize: "0.9rem",
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {tripcode.replace(/^!+/, "!")}
-                    </span>
-                  )}
+      {!loading && (
+        <ul>
+          {boards.map((b) => (
+            <li key={b.key} style={{ marginBottom: "1rem" }}>
+              <Link href={`/${b.key}`}>
+                <strong style={{ cursor: "pointer" }}>
+                  /{b.key}/ — {b.name}
                 </strong>
               </Link>
-              <br />
-              <small>{new Date(thread.createdAt).toLocaleString()}</small>
+              {b.description && <p style={{ margin: 0 }}>{b.description}</p>}
+              {b.isNSFW && <span style={{ color: "red" }}>NSFW 🔞</span>}
             </li>
-          );
-        })}
-      </ul>
+          ))}
+        </ul>
+      )}
     </main>
   );
 }

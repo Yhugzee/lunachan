@@ -5,7 +5,6 @@ import { withAdminAuth } from "@/lib/withAdminAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-// S3 client for Cloudflare R2 (S3-compatible)
 const s3 = new S3Client({
   region: "auto",
   endpoint: process.env.R2_ENDPOINT!,
@@ -18,12 +17,11 @@ const s3 = new S3Client({
 
 function extractKeyFromPublicUrl(url: string): string | null {
   try {
-    const publicBase = process.env.R2_PUBLIC_DOMAIN!;
-    if (publicBase && url.startsWith(publicBase + "/")) {
-      return url.substring(publicBase.length + 1);
+    const base = process.env.R2_PUBLIC_DOMAIN!;
+    if (base && url.startsWith(base.replace(/\/$/, "") + "/")) {
+      return url.substring(base.replace(/\/$/, "").length + 1);
     }
     const u = new URL(url);
-    // Remove leading '/'
     return u.pathname.replace(/^\//, "");
   } catch {
     return null;
@@ -36,8 +34,8 @@ export default async function handler(
 ) {
   await connectToDatabase();
 
-  // Rate limit: 5 req/min
-  const ok = await rateLimit(req, res, { windowMs: 60_000, max: 5 });
+  // petit rate-limit pour l'endpoint admin delete
+  const ok = await rateLimit(req, res, { windowMs: 60_000, max: 10 });
   if (!ok) return;
 
   return withAdminAuth(req, res, async () => {
@@ -51,51 +49,49 @@ export default async function handler(
     }
 
     try {
-      // Delete thread in DB but keep returned document to get image URLs
-      const deletedThread = await Thread.findOneAndDelete({ id });
-      if (!deletedThread) {
+      // On récupère le document supprimé pour extraire les images
+      const deleted = await Thread.findOneAndDelete({ id });
+      if (!deleted)
         return res.status(404).json({ message: "Thread introuvable" });
-      }
-
-      // Collect all image URLs from messages (if any)
-      type MinimalMessage = { imageUrl?: string | null };
-      const messages = (deletedThread as unknown as { messages?: MinimalMessage[] })
-        .messages ?? [];
-
-      const urls: string[] = Array.isArray(messages)
-        ? messages
-            .map((m) => m?.imageUrl)
-            .filter((u): u is string => typeof u === "string" && u.length > 0)
-        : [];
-
-      // Map to keys and deduplicate
-      const keys = Array.from(
-        new Set(
-          urls
-            .map((u) => extractKeyFromPublicUrl(u))
-            .filter((k): k is string => !!k),
-        ),
-      );
 
       const bucket = process.env.R2_BUCKET!;
-      const deletions = await Promise.allSettled(
-        keys.map((Key) => s3.send(new DeleteObjectCommand({ Bucket: bucket, Key }))),
-      );
+      const keys = new Set<string>();
 
-      const failed: { key: string; error: string }[] = [];
-      deletions.forEach((res, i) => {
-        if (res.status === "rejected") {
-          failed.push({ key: keys[i], error: String(res.reason) });
+      // OP + replies
+      for (const m of (deleted as any).messages ?? []) {
+        if (m?.imageKey && typeof m.imageKey === "string") {
+          keys.add(m.imageKey);
+          continue;
         }
-      });
+        if (m?.imageUrl && typeof m.imageUrl === "string") {
+          const k = extractKeyFromPublicUrl(m.imageUrl);
+          if (k) keys.add(k);
+        }
+      }
 
-      if (failed.length > 0) {
-        console.warn("[ADMIN DELETE WARN] Some R2 deletions failed", failed);
-        return res.status(200).json({
-          message:
-            "Thread supprimé. Certaines images n'ont pas pu être supprimées du stockage.",
-          failed,
-        });
+      if (keys.size > 0) {
+        const results = await Promise.allSettled(
+          Array.from(keys).map((Key) =>
+            s3.send(new DeleteObjectCommand({ Bucket: bucket, Key })),
+          ),
+        );
+
+        const failed = results
+          .map((r, i) => ({ r, k: Array.from(keys)[i] }))
+          .filter((x) => x.r.status === "rejected")
+          .map((x) => ({
+            key: x.k,
+            error: String((x.r as PromiseRejectedResult).reason),
+          }));
+
+        if (failed.length) {
+          console.warn("[ADMIN DELETE WARN] R2 deletions failed", failed);
+          return res.status(200).json({
+            message:
+              "Thread supprimé (certaines images n'ont pas pu être supprimées).",
+            failed,
+          });
+        }
       }
 
       return res.status(200).json({ message: "Thread supprimé avec succès" });
