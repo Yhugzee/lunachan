@@ -1,64 +1,71 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Thread } from "@/models/Thread";
-import { getTripcode } from "@/lib/tripcode";
-
-// ➕ Génère un ID style imageboard
-function generateChanId(): string {
-  const timestamp = Date.now().toString();
-  const random = Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, "0");
-  return timestamp.slice(-7) + random;
-}
+import type { IThread, IMessage } from "@/models/Thread"; // si tu as exporté les interfaces
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  const { id } = req.query;
+  try {
+    await connectToDatabase();
+  } catch (e) {
+    console.error("[THREAD_API_DB_ERROR]", e);
+    return res.status(500).json({ message: "DB connection error" });
+  }
 
-  if (typeof id !== "string") {
+  const { id } = req.query;
+  if (!id || typeof id !== "string") {
     return res.status(400).json({ message: "ID invalide" });
   }
 
-  try {
-    await connectToDatabase();
+  if (req.method === "GET") {
+    try {
+      const th = await Thread.findOne({ id }).lean<IThread | null>();
+      if (!th) return res.status(404).json({ message: "Thread introuvable" });
+      return res.status(200).json(th);
+    } catch (e) {
+      console.error("[THREAD_GET_ERROR]", e);
+      return res.status(500).json({ message: "Erreur serveur (GET)" });
+    }
+  }
 
-    if (req.method === "GET") {
-      const thread = await Thread.findOne({ id });
-      if (!thread) {
+  if (req.method === "POST") {
+    try {
+      const { content, tripcode, imageUrl, imageKey, mimeType, size } =
+        (req.body ?? {}) as Partial<IMessage>;
+
+      if (!content && !imageUrl) {
+        return res.status(400).json({ message: "Contenu ou image requis" });
+      }
+
+      const now = new Date().toISOString();
+      const msg: IMessage = {
+        id: `${Date.now()}-r`,
+        content,
+        createdAt: now,
+        tripcode,
+        imageUrl,
+        imageKey,
+        mimeType,
+        size,
+      };
+
+      const result = await Thread.updateOne(
+        { id },
+        { $push: { messages: msg } },
+      );
+
+      if (result.matchedCount === 0) {
         return res.status(404).json({ message: "Thread introuvable" });
       }
-      return res.status(200).json(thread);
+
+      return res.status(201).json({ ok: true, message: msg });
+    } catch (e) {
+      console.error("[THREAD_POST_REPLY_ERROR]", e);
+      return res.status(500).json({ message: "Erreur serveur (POST reply)" });
     }
-
-    if (req.method === "POST") {
-      const { content, trip } = req.body;
-
-      if (!content || typeof content !== "string") {
-        return res.status(400).json({ message: "Contenu invalide" });
-      }
-
-      const thread = await Thread.findOne({ id });
-      if (!thread) {
-        return res.status(404).json({ message: "Thread non trouvé" });
-      }
-      thread.messages.push({
-        id: generateChanId(),
-        content,
-        createdAt: new Date().toISOString(),
-        tripcode: getTripcode(trip),
-      });
-
-      await thread.save();
-      return res.status(201).json(thread);
-    }
-
-    res.setHeader("Allow", ["GET", "POST"]);
-    return res.status(405).end(`Méthode ${req.method} non autorisée`);
-  } catch (error) {
-    console.error("[API ERROR]", error);
-    return res.status(500).json({ message: "Erreur interne serveur" });
   }
+
+  return res.status(405).json({ message: "Méthode non autorisée" });
 }
