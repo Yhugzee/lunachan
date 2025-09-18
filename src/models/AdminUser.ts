@@ -1,9 +1,19 @@
-import { Schema, model, models } from "mongoose";
+import mongoose from "mongoose";
 
-const AdminUserSchema = new Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
+export interface IAdminUser {
+  _id: mongoose.Types.ObjectId;
+  username: string;
+  password: string; // hashé
+  createdAt: Date;
+}
 
-export const AdminUser =
-  models.AdminUser || model("AdminUser", AdminUserSchema, "admins");
+const AdminSchema = new mongoose.Schema<IAdminUser>(
+  {
+    username: { type: String, required: true, unique: true, trim: true },
+    password: { type: String, required: true },
+  },
+  { timestamps: { createdAt: true, updatedAt: false } },
+);
+
+export const AdminModel =
+  mongoose.models.Admin || mongoose.model<IAdminUser>("Admin", AdminSchema);
