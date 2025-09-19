@@ -1,12 +1,26 @@
-// Custom error class for Sentry testing
+import type { NextApiRequest, NextApiResponse } from "next";
+
 class SentryExampleAPIError extends Error {
-  constructor(message: string | undefined) {
+  constructor(message = "Sentry test API error") {
     super(message);
     this.name = "SentryExampleAPIError";
   }
 }
-// A faulty API route to test Sentry's error monitoring
-export default function handler(_req, res) {
-throw new SentryExampleAPIError("This error is raised on the backend called by the example page.");
-res.status(200).json({ name: "John Doe" });
+
+export default function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+): void {
+  if (process.env.NODE_ENV === "production") {
+    res
+      .status(404)
+      .json({
+        ok: false,
+        message: "Sentry test route disabled in production.",
+      });
+    return;
+  }
+  throw new SentryExampleAPIError(
+    "This error is raised on the backend called by the example page.",
+  );
 }
