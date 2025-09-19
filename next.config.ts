@@ -1,12 +1,12 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
-const publicHost = process.env.NEXT_PUBLIC_R2_PUBLIC_HOSTNAME || ""; // ex: "pub-xxxxx.r2.dev" ou "cdn.lunachan.xyz"
+const publicHost = process.env.NEXT_PUBLIC_R2_PUBLIC_HOSTNAME || "";
 
 const patterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
-  // Tous les sous-domaines *.r2.dev (pratique si tu changes de bucket public)
+  // Tous les *.r2.dev
   { protocol: "https", hostname: "**.r2.dev", pathname: "/**" },
-  // Cloudflare R2 "endpoint" direct (au cas où tu sers via cloudflarestorage.com)
+  // Endpoints R2 directs
   {
     protocol: "https",
     hostname: "*.r2.cloudflarestorage.com",
