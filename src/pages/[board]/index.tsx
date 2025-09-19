@@ -1,8 +1,14 @@
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { getTripColor } from "@/lib/color";
+import { tripcodeFromInput } from "@/lib/tripcode";
 import type { Thread } from "@/types/thread";
+
+function errMsg(e: unknown) {
+  return e instanceof Error ? e.message : String(e);
+}
 
 export default function BoardPage() {
   const router = useRouter();
@@ -11,7 +17,7 @@ export default function BoardPage() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [trip, setTrip] = useState("");
+  const [trip, setTrip] = useState(""); // input brut (ex: "#monSecret")
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +27,9 @@ export default function BoardPage() {
     fetch(`/api/boards/${board}/threads`)
       .then((res) => res.json())
       .then(setThreads)
-      .catch(() => {});
+      .catch((e: unknown) => {
+        console.error("GET /api/boards/[key]/threads failed:", e);
+      });
   }, [board]);
 
   // Création d'un thread (upload R2 + POST thread)
@@ -37,7 +45,7 @@ export default function BoardPage() {
 
     try {
       if (imageFile) {
-        // 1) Demande d'URL pré-signée pour upload direct R2
+        // 1) Presign pour upload direct R2
         const presignRes = await fetch("/api/upload/create-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -48,8 +56,10 @@ export default function BoardPage() {
           }),
         });
         if (!presignRes.ok) {
-          const t = await presignRes.text();
-          throw new Error(`Presign failed: ${t}`);
+          const t = await presignRes.text().catch(() => "");
+          alert(`Presign failed: ${t || presignRes.statusText}`);
+          setLoading(false);
+          return;
         }
         const { uploadUrl, key, imageUrl } = (await presignRes.json()) as {
           uploadUrl: string;
@@ -66,8 +76,10 @@ export default function BoardPage() {
           body: imageFile,
         });
         if (!putRes.ok) {
-          const t = await putRes.text();
-          throw new Error(`Upload R2 failed: ${putRes.status} ${t}`);
+          const t = await putRes.text().catch(() => "");
+          alert(`Upload R2 failed: ${putRes.status} ${t || putRes.statusText}`);
+          setLoading(false);
+          return;
         }
 
         imagePayload = {
@@ -78,27 +90,40 @@ export default function BoardPage() {
         };
       }
 
-      // 3) Création du thread dans le board
+      // 3) Création du thread
+      const tripcode = trip ? tripcodeFromInput(trip) : undefined;
+
       const res = await fetch(`/api/boards/${board}/threads`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content, trip, ...(imagePayload || {}) }),
+        body: JSON.stringify({
+          title,
+          content,
+          trip: tripcode, // l’API posera ça dans messages[0].tripcode
+          ...(imagePayload || {}),
+        }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}) as unknown);
       if (!res.ok) {
-        throw new Error(data?.message || "Création du thread échouée");
+        const msg =
+          (data as { message?: string })?.message ||
+          res.statusText ||
+          "Création du thread échouée";
+        alert(msg);
+        setLoading(false);
+        return;
       }
 
-      // Reset + prepend + redirection vers la page du thread si tu veux
+      // Reset + prepend + redirection
       setTitle("");
       setContent("");
       setTrip("");
       setImageFile(null);
       setThreads((prev) => [data as Thread, ...prev]);
-      router.push(`/thread/${data.id}`); // adapte si tu veux /[board]/thread/[id]
-    } catch (err: any) {
-      alert(err?.message || String(err));
+      router.push(`/thread/${(data as Thread).id}`);
+    } catch (e: unknown) {
+      alert(errMsg(e));
     } finally {
       setLoading(false);
     }
@@ -127,7 +152,7 @@ export default function BoardPage() {
         />
         <input
           type="text"
-          placeholder="Tripcode (optionnel)"
+          placeholder="Tripcode (optionnel, ex: #monSecret)"
           value={trip}
           onChange={(e) => setTrip(e.target.value)}
           style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
@@ -148,9 +173,8 @@ export default function BoardPage() {
         >
           ?
           <span className="tooltip">
-            Un tripcode est une signature générée après un « # ». Il identifie
-            un auteur sans compte. Exemple : « #monSecret » → « !abc123… ».
-            N’utilise pas un vrai mot de passe !
+            Un tripcode est une signature générée après un « # ». Exemple : «
+            #monSecret » → « !abc123… ». N’utilise pas un vrai mot de passe !
           </span>
         </span>
 
@@ -188,12 +212,23 @@ export default function BoardPage() {
               <small>{new Date(thread.createdAt).toLocaleString()}</small>
 
               {firstMsg?.imageUrl && (
-                <div style={{ marginTop: "0.5rem" }}>
-                  <img
-                    src={firstMsg.imageUrl}
-                    alt=""
-                    style={{ maxWidth: 320, height: "auto", display: "block" }}
-                  />
+                <div style={{ marginTop: "0.5rem", width: 320 }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: 0,
+                      paddingBottom: "62.5%",
+                    }}
+                  >
+                    <Image
+                      src={firstMsg.imageUrl}
+                      alt=""
+                      fill
+                      sizes="320px"
+                      style={{ objectFit: "contain" }}
+                    />
+                  </div>
                 </div>
               )}
             </li>
