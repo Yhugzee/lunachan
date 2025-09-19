@@ -27,12 +27,17 @@ type Thread = {
 type PostReplyOk = { message: Message };
 type PostReplyErr = { message?: string; error?: string };
 
+// ✅ Pas de `any`, on utilise Record<string, unknown> + garde de types
 function isPostReplyOk(v: unknown): v is PostReplyOk {
-  return (
-    !!v &&
-    typeof (v as any).message === "object" &&
-    typeof (v as any).message.id === "string"
-  );
+  if (typeof v !== "object" || v === null) return false;
+
+  const rec = v as Record<string, unknown>;
+  const msg = rec["message"];
+
+  if (typeof msg !== "object" || msg === null) return false;
+
+  const m = msg as Record<string, unknown>;
+  return typeof m["id"] === "string";
 }
 
 export default function ThreadPage() {
@@ -151,13 +156,10 @@ export default function ThreadPage() {
         | null;
 
       if (!resp.ok) {
+        const base = (data ?? {}) as Record<string, unknown>;
         const msg =
-          (data &&
-            "message" in (data as Record<string, unknown>) &&
-            (data as PostReplyErr).message) ||
-          (data &&
-            "error" in (data as Record<string, unknown>) &&
-            (data as PostReplyErr).error) ||
+          (typeof base.message === "string" && base.message) ||
+          (typeof base.error === "string" && base.error) ||
           "Réponse échouée";
         alert(String(msg));
         setSending(false);
