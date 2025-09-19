@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getTripColor } from "@/lib/color";
 import { tripcodeFromInput } from "@/lib/tripcode";
 
@@ -23,6 +24,17 @@ type Thread = {
   messages: Message[];
 };
 
+type PostReplyOk = { message: Message };
+type PostReplyErr = { message?: string; error?: string };
+
+function isPostReplyOk(v: unknown): v is PostReplyOk {
+  return (
+    !!v &&
+    typeof (v as any).message === "object" &&
+    typeof (v as any).message.id === "string"
+  );
+}
+
 export default function ThreadPage() {
   const router = useRouter();
   const { id } = router.query as { id?: string };
@@ -42,8 +54,11 @@ export default function ThreadPage() {
       try {
         const resp = await fetch(`/api/thread/${id}`);
         if (!resp.ok) {
-          const t = await resp.text();
-          throw new Error(`Fetch thread failed: ${resp.status} ${t}`);
+          const t = await resp.text().catch(() => "");
+          console.error("Fetch thread failed:", resp.status, t);
+          alert("Impossible de charger le thread.");
+          setLoading(false);
+          return;
         }
         const th = (await resp.json()) as Thread;
         setThread(th);
@@ -56,7 +71,7 @@ export default function ThreadPage() {
     })();
   }, [id]);
 
-  async function handleReply(e: React.FormEvent) {
+  async function handleReply(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!thread || sending) return;
     if (!content && !file) {
@@ -79,12 +94,15 @@ export default function ThreadPage() {
           body: JSON.stringify({
             contentType: file.type || "application/octet-stream",
             size: file.size,
-            board: thread.boardKey, // range par board dans R2
+            board: thread.boardKey, // ranger par board dans R2
           }),
         });
         if (!presign.ok) {
-          const t = await presign.text();
-          throw new Error(`Presign failed: ${t}`);
+          const t = await presign.text().catch(() => "");
+          console.error("Presign failed:", t);
+          alert("Impossible de préparer l’upload.");
+          setSending(false);
+          return;
         }
         const { uploadUrl, key, imageUrl } = (await presign.json()) as {
           uploadUrl: string;
@@ -98,8 +116,11 @@ export default function ThreadPage() {
           body: file,
         });
         if (!put.ok) {
-          const t = await put.text();
-          throw new Error(`Upload R2 failed: ${put.status} ${t}`);
+          const t = await put.text().catch(() => "");
+          console.error("Upload R2 failed:", put.status, t);
+          alert("Échec de l’upload image.");
+          setSending(false);
+          return;
         }
 
         imagePayload = {
@@ -110,7 +131,7 @@ export default function ThreadPage() {
         };
       }
 
-      // 2) Tripcode (optionnel) — on convertit l’entrée "#secret" en "!abc123…"
+      // 2) Tripcode (optionnel)
       const tripcode = tripInput ? tripcodeFromInput(tripInput) : undefined;
 
       // 3) POST reply
@@ -119,27 +140,49 @@ export default function ThreadPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content,
-          tripcode, // ✅ on envoie bien `tripcode`
+          tripcode,
           ...(imagePayload || {}),
         }),
       });
 
-      const data = await resp.json().catch(() => ({}));
+      const data = (await resp.json().catch(() => null)) as
+        | PostReplyOk
+        | PostReplyErr
+        | null;
+
       if (!resp.ok) {
-        throw new Error((data as any)?.message || "Réponse échouée");
+        const msg =
+          (data &&
+            "message" in (data as Record<string, unknown>) &&
+            (data as PostReplyErr).message) ||
+          (data &&
+            "error" in (data as Record<string, unknown>) &&
+            (data as PostReplyErr).error) ||
+          "Réponse échouée";
+        alert(String(msg));
+        setSending(false);
+        return;
       }
 
-      // 4) MAJ instantanée du state
-      const added = (data as any).message as Message;
-      setThread((prev) =>
-        prev ? { ...prev, messages: [...prev.messages, added] } : prev,
-      );
+      // 4) MAJ instantanée du state (type strict)
+      if (isPostReplyOk(data)) {
+        const added: Message = data.message;
+        setThread((prev) =>
+          prev ? { ...prev, messages: [...prev.messages, added] } : prev,
+        );
+      } else {
+        console.warn("Unexpected POST reply payload:", data);
+        alert("Format de réponse inattendu.");
+        setSending(false);
+        return;
+      }
+
       setContent("");
       setTripInput("");
       setFile(null);
-    } catch (err: unknown) {
+    } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : "Erreur serveur");
+      alert("Erreur serveur");
     } finally {
       setSending(false);
     }
@@ -170,11 +213,13 @@ export default function ThreadPage() {
         }}
       >
         {op?.imageUrl && (
-          <img
+          <Image
             src={op.imageUrl}
             alt=""
+            width={480}
+            height={480}
             style={{
-              maxWidth: 480,
+              width: 480,
               height: "auto",
               display: "block",
               marginBottom: 8,
@@ -201,11 +246,13 @@ export default function ThreadPage() {
             }}
           >
             {m.imageUrl && (
-              <img
+              <Image
                 src={m.imageUrl}
                 alt=""
+                width={420}
+                height={420}
                 style={{
-                  maxWidth: 420,
+                  width: 420,
                   height: "auto",
                   display: "block",
                   marginBottom: 6,
