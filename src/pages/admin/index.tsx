@@ -126,6 +126,16 @@ export default function AdminPage() {
             <br />
             <small>{new Date(thread.createdAt).toLocaleString()}</small>
             <br />
+            {/* Affiche dans quel board le thread (et donc les images) a été posté */}
+            {thread.boardKey && (
+              <small>
+                Board: <Link href={`/${thread.boardKey}`}>/{thread.boardKey}/</Link>
+              </small>
+            )}
+            {!thread.boardKey && (
+              <small>Board: inconnu</small>
+            )}
+            <br />
             <Link
               href={`/thread/${thread.id}`}
               target="_blank"
