@@ -4,9 +4,172 @@
 @use 'components/form';
 @use 'components/thread';
 @use "components/admin";
+/* globals.scss */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&family=Fraunces:wght@600;700&display=swap');
 
-main {
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
+/* ---------- Base / Reset léger ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', sans-serif;
+  background: #0a192f; /* bleu nuit */
+  color: #e6e6e6; /* texte clair */
+  line-height: 1.5; /* ≈150% */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Variables (CSS native) */
+:root {
+  --font-body: 'Manrope', sans-serif;
+  --font-heading: 'Fraunces', serif;
+
+  --color-bg: #0a192f; /* bleu nuit */
+  --color-fg: #e6e6e6; /* texte clair */
+  --color-muted: #b8c0cc; /* texte secondaire */
+  --color-card: #2a2f3a; /* panneau/tuile */
+  --color-border: #3a4150;
+
+  --color-accent: #c9a655; /* or */
+  --color-accent-600: #d8b972; /* or + clair */
+  --color-danger: #e53935; /* pour NSFW, erreurs */
+}
+
+/* ---------- Typo ---------- */
+h1, h2, h3 {
+  margin: 0 0 .5rem;
+  font-family: var(--font-heading), sans-serif;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+p {
+  margin: .25rem 0;
+}
+
+/* Liens par défaut = texte, pas des boutons */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-accent);
+}
+
+/* Focus accessible partout */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- Boutons (opt-in via classe) ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border: 0;
+  border-radius: 10px;
+  padding: .5rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .2s ease, transform .06s ease;
+}
+
+.btn:hover {
+  background: var(--color-accent-600);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* Variante bouton “texte” */
+.btn--ghost {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+
+.btn--ghost:hover {
+  background: rgba(201, 166, 85, 0.12);
+}
+
+/* ---------- Cartes / Liens de boards ---------- */
+/* Utilise .card sur l’élément cliquable (Link -> <a>) */
+.card {
+  display: block;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  transition: border-color .2s ease, transform .06s ease, box-shadow .2s ease;
+}
+
+.card:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+}
+
+.card:active {
+  transform: translateY(1px);
+}
+
+.card__title {
+  color: #cdd6e3;
+  font-weight: 600;
+  margin-bottom: .25rem;
+}
+
+.card__desc {
+  color: var(--color-muted);
+  font-size: .95rem;
+}
+
+/* Icône dossier à gauche si tu en utilises une */
+.card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+}
+
+/* ---------- Badges (NSFW, etc.) ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .1rem .45rem;
+  border-radius: 6px;
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+.badge--nsfw {
+  background: rgba(229, 57, 53, .12);
+  color: var(--color-danger);
+  border: 1px solid rgba(229, 57, 53, .35);
+}
+
+/* ---------- Header / Brand ---------- */
+.site-title {
+  font-family: var(--font-heading), sans-serif;
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: clamp(1.75rem, 2.4vw, 2.25rem);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
 }
