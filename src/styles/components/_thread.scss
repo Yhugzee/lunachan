@@ -152,3 +152,55 @@ ul {
     transition: none;
   }
 }
+/** Thread page themed like admin **/
+.thread-root {
+  color-scheme: dark;
+}
+
+.thread-root .thread-card {
+  background-color: #1f2937; /* slate-800 */
+  border: 1px solid #374151; /* slate-700 */
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+}
+
+.thread-root .thread-reply {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.thread-root textarea,
+.thread-root input,
+.thread-root select {
+  background-color: #111827; /* gray-900 */
+  color: #e5e7eb; /* slate-200 */
+  border: 1px solid #374151; /* slate-700 */
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.thread-root textarea:focus,
+.thread-root input:focus,
+.thread-root select:focus {
+  outline: none;
+  border-color: #c9a655; /* accent */
+  box-shadow: 0 0 0 3px rgba(201, 166, 85, 0.25);
+}
+
+/* form row layout */
+.thread-root .thread-form__row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Make file input text readable on dark bg; keep native control */
+.thread-root input[type="file"] {
+  background-color: transparent;
+  border: 0;
+  padding: 0;
+  color: #e5e7eb;
+}

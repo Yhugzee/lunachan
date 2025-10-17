@@ -173,18 +173,25 @@ export default function AdminPage() {
 
   // === UI admin ===
   return (
-    <main style={{ padding: "2rem" }}>
+    <main className="admin-root" style={{ padding: "2rem" }}>
       <h1>🎛️ Panel Admin</h1>
-      <button onClick={handleLogout} className="logout-button">
-        🔓 Déconnexion
-      </button>
+      <div className="admin-actions">
+        <Link href="/">
+          <button className="logout-button">
+            🏠 Accueil
+          </button>
+        </Link>
+        <button onClick={handleLogout} className="logout-button">
+          🔓 Déconnexion
+        </button>
+      </div>
 
       <section style={{ marginTop: "1rem", marginBottom: "2rem" }}>
         <h2>📋 Boards</h2>
         {boards.length === 0 && <p>Aucun board.</p>}
         <ul>
           {boards.map((b, idx) => (
-            <li key={b._id} style={{ marginBottom: "1rem", border: "1px solid #ccc", padding: "0.75rem", borderRadius: 6 }}>
+            <li key={b._id} style={{ marginBottom: "1rem", backgroundColor: "#1f2937", color: "#e5e7eb", border: "1px solid #374151", padding: "0.75rem", borderRadius: 6 }}>
               <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
                 <code>/{b.key}/</code>
                 <label>

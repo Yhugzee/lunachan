@@ -197,7 +197,7 @@ export default function ThreadPage() {
   const op = thread.messages[0];
 
   return (
-    <main style={{ padding: "2rem", maxWidth: 900, margin: "0 auto" }}>
+    <main className="thread-root" style={{ padding: "2rem", maxWidth: 900, margin: "0 auto" }}>
       <p style={{ marginBottom: "1rem" }}>
         <Link href={`/${thread.boardKey}`}>← Retour /{thread.boardKey}/</Link>
       </p>
@@ -206,14 +206,7 @@ export default function ThreadPage() {
       <small>Créé le {new Date(thread.createdAt).toLocaleString()}</small>
 
       {/* OP */}
-      <article
-        style={{
-          marginTop: "1rem",
-          padding: "1rem",
-          background: "rgba(255,255,255,0.04)",
-          borderRadius: 8,
-        }}
-      >
+      <article className="thread-card" style={{ marginTop: "1rem" }}>
         {op?.imageUrl && (
           <Image
             src={op.imageUrl}
@@ -240,13 +233,7 @@ export default function ThreadPage() {
       <section style={{ marginTop: "1.5rem" }}>
         <h3>Réponses</h3>
         {thread.messages.slice(1).map((m) => (
-          <div
-            key={m.id}
-            style={{
-              padding: "0.75rem 0",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
+          <div key={m.id} className="thread-reply">
             {m.imageUrl && (
               <Image
                 src={m.imageUrl}
@@ -279,7 +266,7 @@ export default function ThreadPage() {
       </section>
 
       {/* Form reply */}
-      <form onSubmit={handleReply} style={{ marginTop: "1.5rem" }}>
+      <form onSubmit={handleReply} className="thread-form" style={{ marginTop: "1.5rem" }} >
         <textarea
           placeholder="Ta réponse…"
           value={content}
@@ -287,20 +274,13 @@ export default function ThreadPage() {
           rows={4}
           style={{ width: "100%", padding: "0.5rem", marginBottom: 8 }}
         />
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            marginBottom: 8,
-          }}
-        >
+        <div className="thread-form__row" style={{ marginBottom: 8 }} >
           <input
             type="text"
             placeholder="Tripcode (ex: #monSecret)"
             value={tripInput}
             onChange={(e) => setTripInput(e.target.value)}
-            style={{ flex: 1, padding: "0.5rem" }}
+            style={{ flex: 1 }}
           />
           <input
             type="file"
@@ -309,7 +289,7 @@ export default function ThreadPage() {
           />
         </div>
 
-        <button type="submit" disabled={sending}>
+        <button type="submit" disabled={sending} className="btn">
           {sending ? "Envoi…" : "Répondre"}
         </button>
       </form>
