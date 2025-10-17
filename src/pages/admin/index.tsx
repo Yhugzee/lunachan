@@ -175,9 +175,16 @@ export default function AdminPage() {
   return (
     <main className="admin-root" style={{ padding: "2rem" }}>
       <h1>🎛️ Panel Admin</h1>
-      <button onClick={handleLogout} className="logout-button">
-        🔓 Déconnexion
-      </button>
+      <div className="admin-actions">
+        <Link href="/">
+          <button className="logout-button">
+            🏠 Accueil
+          </button>
+        </Link>
+        <button onClick={handleLogout} className="logout-button">
+          🔓 Déconnexion
+        </button>
+      </div>
 
       <section style={{ marginTop: "1rem", marginBottom: "2rem" }}>
         <h2>📋 Boards</h2>
